@@ -5,6 +5,13 @@ import bcrypt from "bcrypt";
 import { sql } from "../config/db.js";
 import { staffSignInSchema } from "../utils/validation.js";
 import { sendToken } from "../utils/jwtToken.js";
+import { sendMail } from "../utils/sendMail.js";
+import {
+    RESET_CODE_TTL_MINUTES,
+    createResetCode,
+    verifyResetCode,
+    deleteResetCode
+} from "../services/passwordReset.service.js";
 
 // Staff Login using only Staff ID and Password
 export const StaffLogin = handleAsyncError(async (req, res, next) => {
@@ -133,37 +140,72 @@ export const sendPasswordResetOTP = handleAsyncError(async (req, res, next) => {
         return next(new handleError("No user found with this email", 404));
     }
 
-    // Return success response for OTP dispatch
+    const code = await createResetCode(users[0].id);
+
+    await sendMail({
+        email: users[0].email,
+        subject: "Your password reset code",
+        text: `Your password reset code is ${code}. It expires in ${RESET_CODE_TTL_MINUTES} minutes.`
+    });
+
     res.status(200).json({
         success: true,
         message: "Password reset OTP sent to email"
     });
 });
 
+// VerifyResetOTP
+export const verifyPasswordResetOTP = handleAsyncError(async (req, res, next) => {
+    const { email, code } = req.body;
+    if (!email || !code) {
+        return next(new handleError("Please provide email and code", 400));
+    }
+
+    const users = await sql`
+        SELECT id FROM users WHERE email = ${email.toLowerCase().trim()} LIMIT 1
+    `;
+
+    const isValid = users.length > 0 && await verifyResetCode(users[0].id, code);
+    if (!isValid) {
+        return next(new handleError("Invalid or expired code", 400));
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "Code verified successfully"
+    });
+});
+
 // ResetPassword
 export const resetUserPassword = handleAsyncError(async (req, res, next) => {
-    const { email, newPassword } = req.body;
-    if (!email || !newPassword) {
-        return next(new handleError("Please provide email and new password", 400));
+    const { email, code, newPassword } = req.body;
+    if (!email || !code || !newPassword) {
+        return next(new handleError("Please provide email, code and new password", 400));
     }
 
     if (newPassword.length < 6) {
         return next(new handleError("New password must be at least 6 characters", 400));
     }
 
+    const users = await sql`
+        SELECT id FROM users WHERE email = ${email.toLowerCase().trim()} LIMIT 1
+    `;
+
+    const isValid = users.length > 0 && await verifyResetCode(users[0].id, code);
+    if (!isValid) {
+        return next(new handleError("Invalid or expired code", 400));
+    }
+
     const salt = await bcrypt.genSalt(10);
     const newPasswordHash = await bcrypt.hash(newPassword, salt);
 
-    const updated = await sql`
-        UPDATE users 
-        SET password_hash = ${newPasswordHash}, updated_at = CURRENT_TIMESTAMP 
-        WHERE email = ${email.toLowerCase().trim()}
-        RETURNING id
+    await sql`
+        UPDATE users
+        SET password_hash = ${newPasswordHash}, updated_at = CURRENT_TIMESTAMP
+        WHERE id = ${users[0].id}
     `;
 
-    if (!updated || updated.length === 0) {
-        return next(new handleError("User not found", 404));
-    }
+    await deleteResetCode(users[0].id);
 
     res.status(200).json({
         success: true,

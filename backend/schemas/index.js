@@ -3,11 +3,13 @@ import { createDepartmentSchema } from "./department.schema.js";
 import { createStaffSchema,  } from "./staff.schema.js";
 import { createServiceSchema } from "./service.schema.js";
 import { createPatientSchema } from "./patient.schema.js";
+import { createPasswordResetSchema } from "./passwordReset.schema.js";
 
 export const initAllSchemas = async () => {
     try {
         console.log("Initializing database schemas...");
         await createUserSchema();
+        await createPasswordResetSchema();
         await createStaffSchema();
         await createDepartmentSchema();
 
@@ -28,7 +30,8 @@ export {
     createDepartmentSchema,
     createStaffSchema, 
     createServiceSchema,
-    createPatientSchema, 
+    createPatientSchema,
+    createPasswordResetSchema,
 
 
 };

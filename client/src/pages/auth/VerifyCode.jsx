@@ -139,34 +139,36 @@ const VerifyCode = ({ role }) => {
             }
             error={error}
         >
-            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-                <fieldset disabled={isSubmitting} className="flex flex-col gap-1">
-                    <legend className="text-sm font-medium text-slate-700 mb-1">Verification code</legend>
-                    <div className="flex justify-between gap-3">
-                        {digits.map((digit, index) => (
-                            <input
-                                key={index}
-                                ref={(el) => (inputsRef.current[index] = el)}
-                                type="text"
-                                inputMode="numeric"
-                                pattern="[0-9]*"
-                                maxLength={CODE_LENGTH}
-                                autoComplete={index === 0 ? "one-time-code" : "off"}
-                                autoFocus={index === 0}
-                                aria-label={`Digit ${index + 1} of ${CODE_LENGTH}`}
-                                value={digit}
-                                onChange={(e) => handleChange(index, e)}
-                                onKeyDown={(e) => handleKeyDown(index, e)}
-                                onPaste={(e) => handlePaste(index, e)}
-                                onFocus={(e) => e.target.select()}
-                                className={clsx(
-                                    "w-full h-14 border border-gray-300 rounded-sm text-center text-2xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500",
-                                    error && "border-red-500 focus:ring-red-400"
-                                )}
-                            />
-                        ))}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-2">
+                <div disabled={isSubmitting} className="flex flex-col gap-1">
+                    <label className="text-sm font-medium text-slate-700 mb-1">Verification code</label>
+                    <div className='flex items-center justify-center '>
+                        <div className="flex justify-between  gap-3">
+                            {digits.map((digit, index) => (
+                                <input
+                                    key={index}
+                                    ref={(el) => (inputsRef.current[index] = el)}
+                                    type="text"
+                                    inputMode="numeric"
+                                    pattern="[0-9]*"
+                                    maxLength={CODE_LENGTH}
+                                    autoComplete={index === 0 ? "one-time-code" : "off"}
+                                    autoFocus={index === 0}
+                                    aria-label={`Digit ${index + 1} of ${CODE_LENGTH}`}
+                                    value={digit}
+                                    onChange={(e) => handleChange(index, e)}
+                                    onKeyDown={(e) => handleKeyDown(index, e)}
+                                    onPaste={(e) => handlePaste(index, e)}
+                                    onFocus={(e) => e.target.select()}
+                                    className={clsx(
+                                        "w-12 h-10 border border-gray-300 rounded-sm text-center text-2xl font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-500 focus:border-transparent transition-all disabled:bg-gray-100 disabled:cursor-not-allowed disabled:text-gray-500",
+                                        error && "border-red-500 focus:ring-red-400"
+                                    )}
+                                />
+                            ))}
+                        </div>
                     </div>
-                </fieldset>
+                </div>
 
                 <Button
                     type="submit"

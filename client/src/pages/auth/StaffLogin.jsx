@@ -1,32 +1,78 @@
-import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import React, {useEffect, useState} from 'react';
+import {Link, useNavigate} from 'react-router-dom';
 import TextBox from "../../components/ui/TextBox.jsx";
 import Button from "../../components/ui/Button.jsx";
+import {useDispatch, useSelector} from "react-redux";
+import {validateForm} from "../../helpers/validations.js";
+import {removeErrors, removeSuccess, staffLogin} from "../../store/slice/auth/authSlice.js";
+
+
+
 
 const StaffLogin = () => {
-    const [staffId, setStaffId] = useState("");
-    const [password, setPassword] = useState("");
-    const [error, setError] = useState("");
-    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
+    const [errors, setErrors] = useState({});
+    const {error, success, loading} = useSelector(state => state.auth);
+
+
+
+
+    const [formData,setFormData] = useState({
+        staffId:"",
+        password:""
+    });
+
+    const loginRules = {
+        staffId: [
+            { type: "required", message: "Staff ID is required" },
+        ],
+        password: [
+            { type: "required", message: "Password is required" },
+            {
+                type: "minLength",
+                value: 4,
+                message: "Password must be at least 4 characters",
+            },
+        ],
+    }
+
+
+    const handleChange = (e)=>{
+        const {name, value} = e.target;
+        setFormData({
+            ...formData,
+            [name]: value,
+        });
+
+        setErrors((prev)=>({
+            ...prev,
+            [name]:"",
+        }));
+
+        if(error) dispatch(removeErrors())
+
+    }
+
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (isSubmitting) return;
 
-        setError("");
-        setIsSubmitting(true);
+        const errorValidations = validateForm(formData, loginRules)
+        setErrors(errorValidations)
 
-        try {
-            // TODO: replace with real authentication, e.g.
-            // await authService.signIn({ staffId: staffId.trim(), password });
-            // then navigate to the staff dashboard.
-            await new Promise((resolve) => setTimeout(resolve, 500)); // placeholder
-        } catch (err) {
-            setError("Sign in failed. Check your Staff ID and password and try again.");
-        } finally {
-            setIsSubmitting(false);
-        }
+        if(Object.keys(errorValidations).length > 0) return
+
+        dispatch(staffLogin(formData))
     };
+
+    useEffect(() => {
+        if(success){
+            console.log(success)
+            dispatch(removeSuccess())
+        }
+    }, [dispatch, success]);
 
     return (
         <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 bg-slate-900">
@@ -61,17 +107,18 @@ const StaffLogin = () => {
                         </div>
                     )}
 
-                    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate={false}>
+                    <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
                         <TextBox
                             label="Staff ID"
                             name="staffId"
                             placeholder="Enter your Staff ID"
                             autoComplete="username"
                             autoFocus
-                            value={staffId}
-                            onChange={(e) => setStaffId(e.target.value)}
+                            value={formData.staffId}
+                            error={errors.staffId}
+                            onChange={handleChange}
                             required
-                            disabled={isSubmitting}
+                            disabled={loading}
                         />
                         <div>
                             <TextBox
@@ -80,10 +127,11 @@ const StaffLogin = () => {
                                 type="password"
                                 placeholder="••••••••"
                                 autoComplete="current-password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
+                                value={formData.password}
+                                error={errors.password}
+                                onChange={handleChange}
                                 required
-                                disabled={isSubmitting}
+                                disabled={loading}
                             />
                             <div className="flex justify-end mt-1">
                                 <Link
@@ -97,9 +145,9 @@ const StaffLogin = () => {
 
                         <Button
                             type="submit"
-                            label={isSubmitting ? "Signing in…" : "Sign In"}
-                            disabled={isSubmitting}
-                            aria-busy={isSubmitting}
+                            label={loading ? "Signing in…" : "Sign In"}
+                            disabled={loading}
+                            aria-busy={loading}
                             className="w-full bg-slate-800 text-white text-sm hover:bg-slate-900 transition-colors py-1.5 mt-2 disabled:opacity-60 disabled:cursor-not-allowed"
                         />
                     </form>
